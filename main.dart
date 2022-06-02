@@ -5,6 +5,24 @@ void main() {
   runApp(const MyApp());
 }
 
+//custom primarySwatch/ swatch pallet
+class Palette{
+  static const MaterialColor greenToDark = MaterialColor(
+      0xff275d38, // 0%
+      <int, Color>{
+        50:  Color(0xff235432 ),//10%
+        100:  Color(0xff1f4a2d),//20%
+        200:  Color(0xff1b4127),//30%
+        300:  Color(0xff173822),//40%
+        400:  Color(0xff142f1c),//50%
+        500:  Color(0xff102516),//60%
+        600:  Color(0xff0c1c11),//70%
+        700:  Color(0xff08130b),//80%
+        800:  Color(0xff040906),//90%
+        900:  Color(0xff000000),//100%
+      },
+  );
+}
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
   @override
@@ -12,9 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Palette.greenToDark,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Map App'), //appbar title
     );
   }
 }
@@ -56,6 +74,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title : Text(widget.title)
+      ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
         child: SfMaps(
@@ -106,4 +127,6 @@ class MapModel {
   String buildingName;
   Color color;
   }
+
+
 
