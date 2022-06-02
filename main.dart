@@ -63,7 +63,6 @@ class _MyHomePageState extends State<MyHomePage> {
             MapShapeLayer(
               source: _shapeSource,
               showDataLabels: true,
-              legend: const MapLegend(MapElement.shape),
               shapeTooltipBuilder: (BuildContext context, int index) {
               return Padding(
               padding: const EdgeInsets.all(7),
