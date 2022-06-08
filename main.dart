@@ -1,28 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_maps/maps.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:syncfusion_flutter_maps/maps.dart';
+
 void main() {
   runApp(const MyApp());
 }
 
-//custom primarySwatch/ swatch pallet
-class Palette{
-  static const MaterialColor greenToDark = MaterialColor(
-      0xff275d38, // 0%
-      <int, Color>{
-        50:  Color(0xff235432 ),//10%
-        100:  Color(0xff1f4a2d),//20%
-        200:  Color(0xff1b4127),//30%
-        300:  Color(0xff173822),//40%
-        400:  Color(0xff142f1c),//50%
-        500:  Color(0xff102516),//60%
-        600:  Color(0xff0c1c11),//70%
-        700:  Color(0xff08130b),//80%
-        800:  Color(0xff040906),//90%
-        900:  Color(0xff000000),//100%
-      },
-  );
-}
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
   @override
@@ -30,9 +14,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Palette.greenToDark,
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Map App'), //appbar title
+      home: const MyHomePage(title: 'Map App'),
     );
   }
 }
@@ -47,86 +31,109 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late MapShapeSource _shapeSource;
   late List<MapModel> _mapData;
-
- // List _items = [];
-
-  // Fetch content from the json file
-  //Future<void> readJson() async {
-    //final String response = await rootBundle.loadString('assets/sample.json');
-    //final data = await json.decode(response);
-    //setState(() {
-      //_items = data["items"];
-    //});
-  //}
+  late MapZoomPanBehavior _zoomPanBehavior;
 
   @override
   void initState() {
-    _mapData = _getMapData();
-    _shapeSource = MapShapeSource.asset('assets/uvu_map_updated.json',
+    _mapData = [];
+    _zoomPanBehavior = MapZoomPanBehavior();
+    super.initState();
+  }
+
+  Future<String> getJsonFromAssets() async {
+    return await rootBundle.loadString('assets/uvu.json');
+  }
+
+  Future<bool> loadMapData() async {
+    final String jsonString = await getJsonFromAssets();
+    final Map<String, dynamic> jsonResponse = jsonDecode(jsonString);
+    List<dynamic> feature = jsonResponse['features'];
+    for (int i = 0; i < feature.length; i++) {
+      _mapData.add(
+          MapModel.fromJson(feature[i]['properties'] as Map<String, dynamic>));
+      print(feature[i]['properties']);
+    }
+
+    _shapeSource = MapShapeSource.asset('assets/uvu.json',
         shapeDataField: 'NAME',
         dataCount: _mapData.length,
-        primaryValueMapper: (int index) => _mapData[index].name,
-        dataLabelMapper: (int index) => _mapData[index].buildingName,
+        primaryValueMapper: (int index) => _mapData[index].name!,
+        dataLabelMapper: (int index) => _mapData[index].name!,
         shapeColorValueMapper: (int index) => _mapData[index].color);
-    super.initState();
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title : Text(widget.title)
+        title: Text(widget.title),
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-        child: SfMaps(
-          layers: <MapShapeLayer>[
-            MapShapeLayer(
-              source: _shapeSource,
-              showDataLabels: true,
-              shapeTooltipBuilder: (BuildContext context, int index) {
-              return Padding(
-              padding: const EdgeInsets.all(7),
-              child: Text(_mapData[index].buildingName,
-              style: const TextStyle(color: Colors.white)));
-              },
-              tooltipSettings: MapTooltipSettings(color: Colors.blue[900]),
-            )
-          ],
+      body: Center(
+        child: Container(
+          height: 500,
+          width: 400,
+          child: FutureBuilder<bool>(
+              future: loadMapData(),
+              builder: (context, snapdata) {
+                if (snapdata.hasData) {
+                  return SfMaps(
+                    layers: [
+                      MapShapeLayer(
+                        source: _shapeSource,
+                        zoomPanBehavior: _zoomPanBehavior,
+                        showDataLabels: true,
+                      )
+                    ],
+                  );
+                } else {
+                  return CircularProgressIndicator();
+                }
+              }),
         ),
       ),
     );
   }
-
-
-  static List<MapModel> _getMapData() {
-    return <MapModel>[
-      MapModel('L10', 'L10', Colors.amber),
-      MapModel('L9', 'L9', Colors.cyan),
-      MapModel('N/A', 'N/A', Colors.pinkAccent),
-      MapModel('UCAS Gym', 'UCAS Gym', Colors.red),
-      MapModel('Melisa Nellesen Center for Autism', 'Melisa Nellesen Center for Autism', Colors.purple),
-      MapModel('McKay Education', 'McKay Education', Colors.lightGreenAccent),
-      MapModel('Utah County Academy of Science', 'Utah County Academy of Science', Colors.indigo),
-      MapModel('Wolverine Service Center', 'Wolverine Service Center', Colors.lightBlue),
-      MapModel('Hal Wing Track & Field', 'Hal Wing Track & Field', Colors.deepOrange),
-      MapModel('L8', 'L8', Colors.purpleAccent),
-      MapModel('L5', 'L5', Colors.greenAccent), MapModel('Northern Territory', 'Northern\nTerritory', Colors.lightGreen),
-      MapModel('Victoria', 'Victoria', Colors.redAccent),
-      MapModel('South Australia', 'South Australia', Colors.yellow),
-      MapModel('Western Australia', 'Western Australia', Colors.indigoAccent),
-      MapModel('Tasmania', 'Tasmania', Colors.blueGrey)
-    ];
-  }
 }
 
 class MapModel {
-  MapModel(this.name, this.buildingName, this.color);
+  // Data type
+  String? name;
+  Color? color;
 
-  String name;
-  String buildingName;
-  Color color;
+  //constructor
+  MapModel({this.name, this.color});
+
+  // Method that assigns values to respective datatype variables
+  factory MapModel.fromJson(Map<String, dynamic> json) {
+    Color modelColor = Colors.black;
+    String modelName = json["NAME"];
+
+    /// While fetching the color codes as String from JSON. Use these codes to convert it as Color.
+    //String strColor = json['COLOR'] as String;
+    //Color hexColor = Color(int.parse(strColor.substring(1, 7), radix: 16) + 0xFF000000);
+
+    if(json["TYPE"] == "Parking Garage"){
+      modelColor = Colors.red;
+    }
+    if(json["TYPE"] == "Student Parking"){
+      modelColor = Colors.yellow;
+    }
+    if(json["TYPE"] == "Inside"){
+      modelColor = Colors.white;
+    }
+    if(json["TYPE"] == "Grass"){
+      modelColor = Colors.green;
+    }
+    if(json["TYPE"] == "Faculty Parking"){
+      modelColor = Colors.purple;
+    }
+    if(json["TYPE"] == "Building"){
+      modelColor = Colors.grey;
+    }
+    if(json["TYPE"] == "Visitor Parking"){
+      modelColor = Colors.pinkAccent;
+    }
+    return MapModel(name: modelName, color: modelColor);
   }
-
-
-
+}
